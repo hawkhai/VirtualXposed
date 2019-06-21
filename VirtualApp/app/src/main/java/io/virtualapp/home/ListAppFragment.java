@@ -102,6 +102,15 @@ public class ListAppFragment extends VFragment<ListAppContract.ListAppPresenter>
     }
 
     private void chooseInstallWay(Runnable runnable, String path) {
+
+        if (true) {
+            if (runnable != null) {
+                runnable.run();
+            }
+            finishActivity();
+            return;
+        }
+
         AlertDialog alertDialog = new AlertDialog.Builder(getContext())
                 .setTitle(R.string.install_choose_way)
                 .setMessage(R.string.install_choose_content)
