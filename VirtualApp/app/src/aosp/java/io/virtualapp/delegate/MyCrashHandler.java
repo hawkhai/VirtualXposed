@@ -6,7 +6,6 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.util.Log;
 
-import com.crashlytics.android.Crashlytics;
 import com.lody.virtual.client.VClientImpl;
 import com.lody.virtual.client.core.VirtualCore;
 import com.lody.virtual.os.VUserHandle;
@@ -33,12 +32,12 @@ public class MyCrashHandler extends BaseCrashHandler {
                 String packageName = currentApplicationInfo.packageName;
                 String processName = currentApplicationInfo.processName;
 
-                Crashlytics.setString("process", processName);
-                Crashlytics.setString("package", packageName);
+                //Crashlytics.setString("process", processName);
+                //Crashlytics.setString("package", packageName);
 
                 int userId = VUserHandle.myUserId();
 
-                Crashlytics.setInt("uid", userId);
+                //Crashlytics.setInt("uid", userId);
 
                 InstalledAppInfo installedAppInfo = VirtualCore.get().getInstalledAppInfo(packageName, 0);
                 if (installedAppInfo != null) {
@@ -47,8 +46,8 @@ public class MyCrashHandler extends BaseCrashHandler {
                         String versionName = packageInfo.versionName;
                         int versionCode = packageInfo.versionCode;
 
-                        Crashlytics.setString("versionName", versionName);
-                        Crashlytics.setInt("versionCode", versionCode);
+                        //Crashlytics.setString("versionName", versionName);
+                        //Crashlytics.setInt("versionCode", versionCode);
 
                     }
                 }
@@ -64,7 +63,7 @@ public class MyCrashHandler extends BaseCrashHandler {
         if (exceptionType.equals(lastCrashType) && (now - lastCrash) < TimeUnit.MINUTES.toMillis(1)) {
             // continues crash, do not upload
         } else {
-            Crashlytics.logException(e);
+            //Crashlytics.logException(e);
         }
 
         Log.i(TAG, "uncaught :" + t, e);
