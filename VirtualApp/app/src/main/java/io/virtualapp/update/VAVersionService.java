@@ -48,6 +48,11 @@ public class VAVersionService extends AVersionService {
 //                versionCode: 3,
 //                updateMessage: "Android 7.0"
 //            }
+
+            if (!versionInfo.has("url")) {
+                return;
+            }
+
             String url = versionInfo.getString("url");
             int versionCode = versionInfo.getInt("versionCode");
             String updateMessage = versionInfo.getString("updateMessage");

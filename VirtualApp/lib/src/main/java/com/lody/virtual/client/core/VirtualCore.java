@@ -26,6 +26,7 @@ import android.os.Looper;
 import android.os.Process;
 import android.os.RemoteException;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.lody.virtual.R;
@@ -52,6 +53,7 @@ import com.lody.virtual.server.interfaces.IPackageObserver;
 import com.lody.virtual.server.interfaces.IUiCallback;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -178,13 +180,29 @@ public final class VirtualCore {
         return unHookPackageManager;
     }
 
+    private boolean checkReflection() {
+        try {
+            Method forName = Class.class.getDeclaredMethod("forName", String.class);
+            Method getDeclaredMethod = Class.class.getDeclaredMethod("getDeclaredMethod", String.class, Class[].class);
+
+            Class<?> vmRuntimeClass = (Class<?>) forName.invoke(null, "dalvik.system.VMRuntime");
+            getDeclaredMethod.invoke(vmRuntimeClass, "getRuntime", null);
+            getDeclaredMethod.invoke(vmRuntimeClass, "setHiddenApiExemptions", new Class[]{String[].class});
+            return true;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
 
     public void startup(Context context) throws Throwable {
         if (!isStartUp) {
             if (Looper.myLooper() != Looper.getMainLooper()) {
                 throw new IllegalStateException("VirtualCore.startup() must called in main thread.");
             }
-            Reflection.unseal(context);
+
+            if (checkReflection()) {
+                Reflection.unseal(context);
+            }
 
             VASettings.STUB_CP_AUTHORITY = context.getPackageName() + "." + VASettings.STUB_DEF_AUTHORITY;
             ServiceManagerNative.SERVICE_CP_AUTH = context.getPackageName() + "." + ServiceManagerNative.SERVICE_DEF_AUTH;
