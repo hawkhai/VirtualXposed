@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -36,10 +37,13 @@ import com.lody.virtual.helper.utils.DeviceUtil;
 import com.lody.virtual.helper.utils.FileUtils;
 import com.lody.virtual.helper.utils.MD5Utils;
 import com.lody.virtual.helper.utils.VLog;
+import com.lody.virtual.os.VEnvironment;
 import com.lody.virtual.remote.InstallResult;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
@@ -96,8 +100,31 @@ public class NewHomeActivity extends NexusLauncherActivity {
         }
     }
 
-    private void installApp(String localTemp, String assertFile, String filemd5) {
-        File xposedInstallerApk = getFileStreamPath(localTemp);
+    private void activeApp(String packageName) {
+        File dataDir = VEnvironment.getDataUserPackageDirectory(0, "de.robv.android.xposed.installer");
+        File modulePath = VEnvironment.getPackageResourcePath(packageName);
+        File configDir = new File(dataDir, "exposed_conf" + File.separator + "modules.list");
+        FileWriter writer = null;
+        try {
+            writer = new FileWriter(configDir, true);
+            writer.append(modulePath.getAbsolutePath());
+            writer.flush();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void installApp(String assertFile) {
+        File xposedInstallerApk = getFileStreamPath(assertFile);
         if (!xposedInstallerApk.exists()) {
             InputStream input = null;
             OutputStream output = null;
@@ -119,11 +146,11 @@ public class NewHomeActivity extends NexusLauncherActivity {
 
         if (xposedInstallerApk.isFile() && !DeviceUtil.isMeizuBelowN()) {
             try {
-                if (filemd5.equals(MD5Utils.getFileMD5String(xposedInstallerApk))) {
-                    VirtualCore.get().installPackage(xposedInstallerApk.getPath(), InstallStrategy.TERMINATE_IF_EXIST);
-                } else {
-                    VLog.w(TAG, "unknown Xposed installer, ignore!");
-                }
+                //if (filemd5.equals(MD5Utils.getFileMD5String(xposedInstallerApk))) {
+                VirtualCore.get().installPackage(xposedInstallerApk.getPath(), InstallStrategy.TERMINATE_IF_EXIST);
+                //} else {
+                //    VLog.w(TAG, "unknown Xposed installer, ignore!");
+                //}
             } catch (Throwable ignored) {
             }
         }
@@ -153,15 +180,35 @@ public class NewHomeActivity extends NexusLauncherActivity {
             VUiKit.defer().when(() -> {
 
                 // adb uninstall io.va.exposed
-                installApp("XposedInstaller_5_8.apk",
-                        "XposedInstaller_3.1.5.apk_",
-                        "8537fb219128ead3436cc19ff35cfb2e");
+                installApp("XposedInstaller_3.1.5.apk_");
+
                 // adb uninstall me.firesun.wechat.enhancement
-                installApp("WechatEnhancement.apk_",
-                        "WechatEnhancement.apk_",
-                        "a3caeb28653e870e3527dd1b21c2dd7a");
+                installApp("WechatEnhancement.apk_");
 
                 copyInstallApp("com.tencent.mm");
+
+                activeApp("me.firesun.wechat.enhancement");
+
+                final int userId = 0;
+                VirtualCore.OnEmitShortcutListener listener = new VirtualCore.OnEmitShortcutListener() {
+                    @Override
+                    public Bitmap getIcon(Bitmap originIcon) {
+                        return originIcon;
+                    }
+
+                    @Override
+                    public String getName(String originName) {
+                        if (userId == 0) {
+                            return originName + "(VXP)";
+                        } else {
+                            return "[" + (userId + 1) + "]" + originName;
+                        }
+                    }
+                };
+                String packageName = "com.tencent.mm";
+                Intent splashIntent = new Intent();
+                splashIntent.setComponent(new ComponentName(VirtualCore.get().getHostPkg(), "io.virtualapp.home.LoadingActivity"));
+                VirtualCore.get().createShortcut(userId, packageName, splashIntent, listener);
 
             }).then((v) -> {
                 dismissDialog(dialog);
