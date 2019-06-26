@@ -33,6 +33,7 @@ import com.android.launcher3.LauncherFiles;
 import com.google.android.apps.nexuslauncher.NexusLauncherActivity;
 import com.lody.virtual.client.core.InstallStrategy;
 import com.lody.virtual.client.core.VirtualCore;
+import com.lody.virtual.client.ipc.VActivityManager;
 import com.lody.virtual.helper.utils.DeviceUtil;
 import com.lody.virtual.helper.utils.FileUtils;
 import com.lody.virtual.helper.utils.MD5Utils;
@@ -46,7 +47,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Method;
+import java.util.List;
 
 import io.virtualapp.R;
 import io.virtualapp.abs.ui.VUiKit;
@@ -101,31 +104,21 @@ public class NewHomeActivity extends NexusLauncherActivity {
     }
 
     private void activeApp(String packageName) {
-        File dataDir = VEnvironment.getDataUserPackageDirectory(0, "de.robv.android.xposed.installer");
-        File modulePath = VEnvironment.getPackageResourcePath(packageName);
-        File configDir = new File(dataDir, "exposed_conf" + File.separator + "modules.list");
-        FileWriter writer = null;
+
         try {
-
-            File filedir = new File(configDir.getParent());
-            if (!filedir.exists()) {
-                filedir.mkdirs();
+            Intent t = new Intent();
+            t.putExtra("activeApp", packageName);
+            t.setComponent(new ComponentName("de.robv.android.xposed.installer",
+                    "de.robv.android.xposed.installer.WelcomeActivity"));
+            t.putExtra("fragment", 1);
+            int ret = VActivityManager.get().startActivity(t, 0);
+            if (ret < 0) {
+                Toast.makeText(getActivity(),
+                        R.string.xposed_installer_not_found,
+                        Toast.LENGTH_SHORT).show();
             }
-
-            writer = new FileWriter(configDir, true);
-            writer.append(modulePath.getAbsolutePath());
-            writer.flush();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+        } catch (Throwable ignored) {
+            ignored.printStackTrace();
         }
     }
 
