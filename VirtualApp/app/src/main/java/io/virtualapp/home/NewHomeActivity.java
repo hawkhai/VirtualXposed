@@ -82,6 +82,39 @@ public class NewHomeActivity extends NexusLauncherActivity {
         mDirectlyBack = sharedPreferences.getBoolean(SettingsActivity.DIRECTLY_BACK_KEY, false);
     }
 
+    private void installApp(String localTemp, String assertFile, String filemd5) {
+        File xposedInstallerApk = getFileStreamPath(localTemp);
+        if (!xposedInstallerApk.exists()) {
+            InputStream input = null;
+            OutputStream output = null;
+            try {
+                input = getApplicationContext().getAssets().open(assertFile);
+                output = new FileOutputStream(xposedInstallerApk);
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = input.read(buffer)) > 0) {
+                    output.write(buffer, 0, length);
+                }
+            } catch (Throwable e) {
+                VLog.e(TAG, "copy file error", e);
+            } finally {
+                FileUtils.closeQuietly(input);
+                FileUtils.closeQuietly(output);
+            }
+        }
+
+        if (xposedInstallerApk.isFile() && !DeviceUtil.isMeizuBelowN()) {
+            try {
+                if (filemd5.equals(MD5Utils.getFileMD5String(xposedInstallerApk))) {
+                    VirtualCore.get().installPackage(xposedInstallerApk.getPath(), InstallStrategy.TERMINATE_IF_EXIST);
+                } else {
+                    VLog.w(TAG, "unknown Xposed installer, ignore!");
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
     private void installXposed() {
         boolean isXposedInstalled = false;
         try {
@@ -104,36 +137,15 @@ public class NewHomeActivity extends NexusLauncherActivity {
             dialog.show();
 
             VUiKit.defer().when(() -> {
-                File xposedInstallerApk = getFileStreamPath("XposedInstaller_5_8.apk");
-                if (!xposedInstallerApk.exists()) {
-                    InputStream input = null;
-                    OutputStream output = null;
-                    try {
-                        input = getApplicationContext().getAssets().open("XposedInstaller_3.1.5.apk_");
-                        output = new FileOutputStream(xposedInstallerApk);
-                        byte[] buffer = new byte[1024];
-                        int length;
-                        while ((length = input.read(buffer)) > 0) {
-                            output.write(buffer, 0, length);
-                        }
-                    } catch (Throwable e) {
-                        VLog.e(TAG, "copy file error", e);
-                    } finally {
-                        FileUtils.closeQuietly(input);
-                        FileUtils.closeQuietly(output);
-                    }
-                }
+                // adb uninstall io.va.exposed
+                installApp("XposedInstaller_5_8.apk",
+                        "XposedInstaller_3.1.5.apk_",
+                        "8537fb219128ead3436cc19ff35cfb2e");
+                // adb uninstall me.firesun.wechat.enhancement
+                installApp("WechatEnhancement.apk_",
+                        "WechatEnhancement.apk_",
+                        "a3caeb28653e870e3527dd1b21c2dd7a");
 
-                if (xposedInstallerApk.isFile() && !DeviceUtil.isMeizuBelowN()) {
-                    try {
-                        if ("8537fb219128ead3436cc19ff35cfb2e".equals(MD5Utils.getFileMD5String(xposedInstallerApk))) {
-                            VirtualCore.get().installPackage(xposedInstallerApk.getPath(), InstallStrategy.TERMINATE_IF_EXIST);
-                        } else {
-                            VLog.w(TAG, "unknown Xposed installer, ignore!");
-                        }
-                    } catch (Throwable ignored) {
-                    }
-                }
             }).then((v) -> {
                 dismissDialog(dialog);
             }).fail((err) -> {
