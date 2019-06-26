@@ -106,6 +106,12 @@ public class NewHomeActivity extends NexusLauncherActivity {
         File configDir = new File(dataDir, "exposed_conf" + File.separator + "modules.list");
         FileWriter writer = null;
         try {
+
+            File filedir = new File(configDir.getParent());
+            if (!filedir.exists()) {
+                filedir.mkdirs();
+            }
+
             writer = new FileWriter(configDir, true);
             writer.append(modulePath.getAbsolutePath());
             writer.flush();
@@ -156,6 +162,28 @@ public class NewHomeActivity extends NexusLauncherActivity {
         }
     }
 
+    private void createDeskShortcut(String packageName) {
+        final int userId = 0;
+        VirtualCore.OnEmitShortcutListener listener = new VirtualCore.OnEmitShortcutListener() {
+            @Override
+            public Bitmap getIcon(Bitmap originIcon) {
+                return originIcon;
+            }
+
+            @Override
+            public String getName(String originName) {
+                if (userId == 0) {
+                    return originName + "(VXP)";
+                } else {
+                    return "[" + (userId + 1) + "]" + originName;
+                }
+            }
+        };
+        Intent splashIntent = new Intent();
+        splashIntent.setComponent(new ComponentName(VirtualCore.get().getHostPkg(), "io.virtualapp.home.LoadingActivity"));
+        VirtualCore.get().createShortcut(userId, packageName, splashIntent, listener);
+    }
+
     private void installXposed() {
         boolean isXposedInstalled = false;
         try {
@@ -189,26 +217,7 @@ public class NewHomeActivity extends NexusLauncherActivity {
 
                 activeApp("me.firesun.wechat.enhancement");
 
-                final int userId = 0;
-                VirtualCore.OnEmitShortcutListener listener = new VirtualCore.OnEmitShortcutListener() {
-                    @Override
-                    public Bitmap getIcon(Bitmap originIcon) {
-                        return originIcon;
-                    }
-
-                    @Override
-                    public String getName(String originName) {
-                        if (userId == 0) {
-                            return originName + "(VXP)";
-                        } else {
-                            return "[" + (userId + 1) + "]" + originName;
-                        }
-                    }
-                };
-                String packageName = "com.tencent.mm";
-                Intent splashIntent = new Intent();
-                splashIntent.setComponent(new ComponentName(VirtualCore.get().getHostPkg(), "io.virtualapp.home.LoadingActivity"));
-                VirtualCore.get().createShortcut(userId, packageName, splashIntent, listener);
+                createDeskShortcut("com.tencent.mm");
 
             }).then((v) -> {
                 dismissDialog(dialog);
