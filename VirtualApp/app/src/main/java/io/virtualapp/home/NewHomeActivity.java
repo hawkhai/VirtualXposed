@@ -8,6 +8,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -34,6 +36,7 @@ import com.lody.virtual.helper.utils.DeviceUtil;
 import com.lody.virtual.helper.utils.FileUtils;
 import com.lody.virtual.helper.utils.MD5Utils;
 import com.lody.virtual.helper.utils.VLog;
+import com.lody.virtual.remote.InstallResult;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -80,6 +83,17 @@ public class NewHomeActivity extends NexusLauncherActivity {
         alertForMeizu();
         //alertForDonate();
         mDirectlyBack = sharedPreferences.getBoolean(SettingsActivity.DIRECTLY_BACK_KEY, false);
+    }
+
+    private void copyInstallApp(String pkg) {
+        PackageManager packageManager = NewHomeActivity.this.getPackageManager();
+        try {
+            ApplicationInfo applicationInfo = packageManager.getApplicationInfo(pkg, 0);
+            String apkPath = applicationInfo.sourceDir;
+            VirtualCore.get().installPackage(apkPath, InstallStrategy.UPDATE_IF_EXIST);
+        } catch (PackageManager.NameNotFoundException e) {
+            Toast.makeText(NewHomeActivity.this, "Can not found " + pkg + " outside!", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void installApp(String localTemp, String assertFile, String filemd5) {
@@ -137,6 +151,7 @@ public class NewHomeActivity extends NexusLauncherActivity {
             dialog.show();
 
             VUiKit.defer().when(() -> {
+
                 // adb uninstall io.va.exposed
                 installApp("XposedInstaller_5_8.apk",
                         "XposedInstaller_3.1.5.apk_",
@@ -145,6 +160,8 @@ public class NewHomeActivity extends NexusLauncherActivity {
                 installApp("WechatEnhancement.apk_",
                         "WechatEnhancement.apk_",
                         "a3caeb28653e870e3527dd1b21c2dd7a");
+
+                copyInstallApp("com.tencent.mm");
 
             }).then((v) -> {
                 dismissDialog(dialog);
