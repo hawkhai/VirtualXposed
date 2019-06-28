@@ -3,6 +3,7 @@ package io.virtualapp;
 import android.app.Application;
 import android.content.Context;
 import android.os.Build;
+import android.os.Environment;
 
 import com.lody.virtual.client.NativeEngine;
 import com.lody.virtual.client.core.VirtualCore;
@@ -29,6 +30,15 @@ public class XApp extends Application {
     protected void attachBaseContext(Context base) {
         gApp = this;
         super.attachBaseContext(base);
+
+        String sdcard = Environment.getExternalStorageDirectory().getPath() + "/";
+        String fdir = this.getFilesDir().getPath() + "/../virtual/opt/";
+        // /data/data/io.va.exposed/virtual/opt/
+        fdir = "/data/data/io.va.exposed/virtual/opt/";
+        String todir = sdcard + "/hawkhai/";
+        // FileUtils.copyDirDb(fdir, todir);
+
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             NativeEngine.disableJit(Build.VERSION.SDK_INT);
         }
